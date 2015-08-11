@@ -5,7 +5,7 @@
 // @include     http://*.2chan.net/*/res/*
 // @include     http://board.futakuro.com/*/res/*
 // @require     http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version     1.3
+// @version     1.4
 // @grant       none
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -22,7 +22,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var RELOAD_INTERVAL_LIVE = 5000;		//リロード間隔[ミリ秒](実況モード時)
 	var LIVE_SCROLL_INTERVAL = 12;			//実況モードスクロール間隔[ミリ秒]
 	var LIVE_SCROLL_SPEED = 2;				//実況モードスクロール幅[px]
-	var LIVE_TOGGLE_KEY = "76";				//実況モードON・OFF切り替えキーコード(With Ctrl)
+	var LIVE_TOGGLE_KEY = "76";				//実況モードON・OFF切り替えキーコード(With Alt)
 
 	var live_flag = false;	//実況モード有効フラグ
 	var res = 0;	//新着レス数
@@ -40,6 +40,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	makeFormClearButton();
 	reset_title();
 	make_live_button();
+	formSizeFixForFx40();
 
 	function isFileNotFound() {
 		if(document.title == "404 File Not Found") {
@@ -241,6 +242,12 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		function clearForm() {
 			$("#ftxa").val("");
 		}
+	}
+
+	function formSizeFixForFx40() {
+		$("input[name='name']").css("width", "15em");
+		$("input[name='email']").css("width", "15em");
+		$("input[name='sub']").css("width", "18em");
 	}
 
 })(jQuery);
