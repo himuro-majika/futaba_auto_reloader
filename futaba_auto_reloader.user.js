@@ -5,7 +5,7 @@
 // @include     http://*.2chan.net/*/res/*
 // @include     http://board.futakuro.com/*/res/*
 // @require     http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version     1.4
+// @version     1.5
 // @grant       none
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -23,53 +23,79 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var LIVE_SCROLL_INTERVAL = 12;			//実況モードスクロール間隔[ミリ秒]
 	var LIVE_SCROLL_SPEED = 2;				//実況モードスクロール幅[px]
 	var LIVE_TOGGLE_KEY = "76";				//実況モードON・OFF切り替えキーコード(With Alt)
+	var SHOW_NORMAL_BUTTON = true;			//通常モードボタンを表示する
 
-	var live_flag = false;	//実況モード有効フラグ
 	var res = 0;	//新着レス数
 	var timerNormal, timerLiveReload, timerLiveScroll;
-	var liveButton;
 	var url = location.href;
 	var script_name = "futaba_auto_reloader";
 
-	//通常時60秒おきにリロード
 	if(!isFileNotFound()){
-		timerNormal = setInterval(rel, RELOAD_INTERVAL_NORMAL);
+		setNormalReload();
 	}
 
 	soudane();
 	makeFormClearButton();
 	reset_title();
 	make_live_button();
-	formSizeFixForFx40();
 
+	//通常リロード開始
+	function setNormalReload() {
+		timerNormal = setInterval(rel, RELOAD_INTERVAL_NORMAL);
+		console.log(script_name + ": Start auto reloading @" + url);
+	}
+	//通常リロード停止
+	function clearNormalReload() {
+		clearInterval(timerNormal);
+		console.log(script_name + ": Stop auto reloading @" + url);
+	}
+	/*
+	 * 404チェック
+	 */
 	function isFileNotFound() {
 		if(document.title == "404 File Not Found") {
 			return true;
 		}
 		else {
-			console.log(script_name + ": Start auto reloading @" + url);
 			return false;
 		}
 	}
 
+	/*
+	 * ボタン作成
+	 */
 	function make_live_button() {
-		liveButton = document.createElement("a");
-		liveButton.id = "relButton";
-		liveButton.style.cursor = 'pointer';
-		liveButton.innerHTML = "[実況モード(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]";
+		var normal_flag = true;	//通常モード有効フラグ
+		//通常モードボタン
+		var $normalButton = $("<a>", {
+			id: "relButton",
+			text: "[通常]",
+			css: {
+				cursor: "pointer",
+				"background-color": "#ea8",
+			},
+			click: function() {
+				normalMode();
+			}
+		});
 
-		var input = document.evaluate(
-			"//input[@value='返信する' or @value='送信する']",
-			document,
-			null,
-			XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-			null);
+		var live_flag = false;	//実況モード有効フラグ
+		//実況モードボタン
+		var $liveButton = $("<a>", {
+			id: "relButton",
+			text: "[実況モード(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
+			css: {
+				cursor: "pointer",
+			},
+			click: function() {
+				liveMode();
+			}
+		});
 
-		for (var i = 0; i < input.snapshotLength; i++) {
-			var submit = input.snapshotItem(i);
-			var tr = submit.parentNode;
-			tr.appendChild(liveButton);
-			liveButton.addEventListener("click", liveMode, true);
+		var $input = $("input[value$='信する']");
+		$input.after($liveButton);
+		if(SHOW_NORMAL_BUTTON){
+			$input.after($normalButton);
 		}
 
 		//実況モードトグルショートカットキー
@@ -78,47 +104,64 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				liveMode();
 			}
 		}, false);
+
+		/*
+		 * 通常モード切り替え
+		 */
+		function normalMode() {
+			if(normal_flag) {
+				clearNormalReload();
+				$normalButton.css("background" , "none");
+				normal_flag = false;
+			} else {
+				setNormalReload();
+				$normalButton.css("background-color" , "#ea8");
+				normal_flag = true;
+			}
+
+		 }
+
+		/*
+		 * 実況モード
+		 * 呼出ごとにON/OFFトグル
+		 */
+		function liveMode() {
+			if (!live_flag) {
+				//実況モード時リロード
+				timerLiveReload = setInterval(rel_scroll, RELOAD_INTERVAL_LIVE);
+				//自動スクロール
+				timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
+				$liveButton.css("backgroundColor", "#ffa5f0");
+				console.log(script_name + ": Start live mode @" + url);
+				live_flag = true;
+			} else {
+				clearInterval(timerLiveReload);
+				clearInterval(timerLiveScroll);
+				$liveButton.css("background", "none");
+				console.log(script_name + ": Stop live mode @" + url);
+				live_flag = false;
+			}
+
+			//新着スクロール
+			function rel_scroll() {
+				$('html, body').animate(
+					{scrollTop:window.scrollMaxY},"fast"
+				);
+				if(isAkahukuNotFound()){
+					//404時
+					liveMode();
+				}
+				else {
+					location.reload();
+				}
+			}
+
+			function live_scroll() {
+				window.scrollBy( 0, LIVE_SCROLL_SPEED );
+			}
+		}
 	}
 
-	/*
-	 * 実況モード
-	 * メソッド呼出ごとにON/OFFトグル
-	 */
-	function liveMode() {
-		if (!live_flag) {
-			//実況モード時リロード
-			timerLiveReload = setInterval(rel_scroll, RELOAD_INTERVAL_LIVE);
-			//自動スクロール
-			timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
-			liveButton.style.backgroundColor = '#ffa5f0';
-			console.log(script_name + ": Start live mode @" + url);
-			live_flag = true;
-		} else {
-			clearInterval(timerLiveReload);
-			clearInterval(timerLiveScroll);
-			liveButton.style.background = 'none';
-			console.log(script_name + ": Stop live mode @" + url);
-			live_flag = false;
-		}
-
-		//新着スクロール
-		function rel_scroll() {
-			$('html, body').animate(
-				{scrollTop:window.scrollMaxY},"fast"
-			);
-			if(isAkahukuNotFound()){
-				//404時
-				liveMode();
-			}
-			else {
-				location.reload();
-			}
-		}
-
-		function live_scroll() {
-			window.scrollBy( 0, LIVE_SCROLL_SPEED );
-		}
-	}
 
 	/*
 	 * 新着レスをリセット
@@ -152,7 +195,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		setTimeout(changetitle, 1000);
 		if(isAkahukuNotFound()){
 			//404時
-			clearInterval(timerNormal);
+			clearNormalReload();
 			console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 		}
 		else {
@@ -242,12 +285,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		function clearForm() {
 			$("#ftxa").val("");
 		}
-	}
-
-	function formSizeFixForFx40() {
-		$("input[name='name']").css("width", "15em");
-		$("input[name='email']").css("width", "15em");
-		$("input[name='sub']").css("width", "18em");
 	}
 
 })(jQuery);
