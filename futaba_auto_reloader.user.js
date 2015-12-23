@@ -70,7 +70,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var normal_flag = true;	//通常モード有効フラグ
 		//通常モードボタン
 		var $normalButton = $("<a>", {
-			id: "relButton",
+			id: "GM_FAR_relButton_normal",
+			class: "GM_FAR_relButton",
 			text: "[通常]",
 			css: {
 				cursor: "pointer",
@@ -84,7 +85,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var live_flag = false;	//実況モード有効フラグ
 		//実況モードボタン
 		var $liveButton = $("<a>", {
-			id: "relButton",
+			id: "GM_FAR_relButton_live",
+			class: "GM_FAR_relButton",
 			text: "[実況モード(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
 			css: {
 				cursor: "pointer",
