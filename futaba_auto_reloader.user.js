@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name           futaba auto reloader
 // @namespace   https://github.com/himuro-majika
-// @description    赤福Firefox版の"リロードの代わりに続きを読む"を有効にして自動更新しちゃう(実況モードもあるよ！)
+// @description    赤福Firefox版で自動更新しちゃう(実況モードもあるよ！)
 // @include     http://*.2chan.net/*/res/*
 // @include     http://board.futakuro.com/*/res/*
 // @require     http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version     1.5
+// @version     1.6
 // @grant       none
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -152,7 +152,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					liveMode();
 				}
 				else {
-					location.reload();
+					clickrelbutton();
 				}
 			}
 
@@ -199,8 +199,18 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 		}
 		else {
-			location.reload();
+			clickrelbutton();
 		}
+	}
+	
+	/**
+	 * 赤福の続きを読むボタンをクリック
+	 */
+	function clickrelbutton() {
+		var relbutton = document.getElementById("akahuku_reload_button");
+		var e = document.createEvent("MouseEvents");
+		e.initEvent("click", false, true);
+		relbutton.dispatchEvent(e);
 	}
 
 	/*
