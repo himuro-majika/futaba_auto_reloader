@@ -210,9 +210,11 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 */
 	function clickrelbutton() {
 		var relbutton = document.getElementById("akahuku_reload_button");
-		var e = document.createEvent("MouseEvents");
-		e.initEvent("click", false, true);
-		relbutton.dispatchEvent(e);
+		if(relbutton){
+			var e = document.createEvent("MouseEvents");
+			e.initEvent("click", false, true);
+			relbutton.dispatchEvent(e);
+		}
 	}
 
 	/*
