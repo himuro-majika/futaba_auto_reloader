@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name           futaba auto reloader
-// @namespace   https://github.com/himuro-majika
+// @namespace      https://github.com/himuro-majika
 // @description    赤福Firefox版で自動更新しちゃう(実況モードもあるよ！)
-// @include     http://*.2chan.net/*/res/*
-// @include     http://board.futakuro.com/*/res/*
-// @require     http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version     1.6
-// @grant       none
+// @author         himuro_majika
+// @include        http://*.2chan.net/*/res/*
+// @include        http://board.futakuro.com/*/res/*
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
+// @version        1.6.1
+// @grant          none
+// @license        MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
 this.$ = this.jQuery = jQuery.noConflict(true);
@@ -68,7 +70,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var normal_flag = true;	//通常モード有効フラグ
 		//通常モードボタン
 		var $normalButton = $("<a>", {
-			id: "relButton",
+			id: "GM_FAR_relButton_normal",
+			class: "GM_FAR_relButton",
 			text: "[通常]",
 			css: {
 				cursor: "pointer",
@@ -82,7 +85,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var live_flag = false;	//実況モード有効フラグ
 		//実況モードボタン
 		var $liveButton = $("<a>", {
-			id: "relButton",
+			id: "GM_FAR_relButton_live",
+			class: "GM_FAR_relButton",
 			text: "[実況モード(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
 			css: {
 				cursor: "pointer",
@@ -208,9 +212,11 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 */
 	function clickrelbutton() {
 		var relbutton = document.getElementById("akahuku_reload_button");
-		var e = document.createEvent("MouseEvents");
-		e.initEvent("click", false, true);
-		relbutton.dispatchEvent(e);
+		if(relbutton){
+			var e = document.createEvent("MouseEvents");
+			e.initEvent("click", false, true);
+			relbutton.dispatchEvent(e);
+		}
 	}
 
 	/*
