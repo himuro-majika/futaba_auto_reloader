@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name           futaba auto reloader
-// @namespace   https://github.com/himuro-majika
+// @namespace      https://github.com/himuro-majika
 // @description    赤福Firefox版で自動更新しちゃう(実況モードもあるよ！)
-// @include     http://*.2chan.net/*/res/*
-// @include     http://board.futakuro.com/*/res/*
-// @require     http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version     1.6
-// @grant       none
+// @author         himuro_majika
+// @include        http://*.2chan.net/*/res/*
+// @include        http://board.futakuro.com/*/res/*
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
+// @version        1.6
+// @grant          none
+// @license        MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
 this.$ = this.jQuery = jQuery.noConflict(true);
