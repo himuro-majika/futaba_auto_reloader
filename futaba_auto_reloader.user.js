@@ -7,7 +7,7 @@
 // @include        http://board.futakuro.com/*/res/*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
 // @version        1.6.1
-// @grant          none
+// @grant          GM_addStyle
 // @license        MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -40,6 +40,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	makeFormClearButton();
 	reset_title();
 	make_live_button();
+	addCss();
 
 	//通常リロード開始
 	function setNormalReload() {
@@ -136,12 +137,14 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				//自動スクロール
 				timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
 				$liveButton.css("backgroundColor", "#ffa5f0");
+				startspin();
 				console.log(script_name + ": Start live mode @" + url);
 				live_flag = true;
 			} else {
 				clearInterval(timerLiveReload);
 				clearInterval(timerLiveScroll);
 				$liveButton.css("background", "none");
+				stopspin();
 				console.log(script_name + ": Stop live mode @" + url);
 				live_flag = false;
 			}
@@ -162,6 +165,16 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 
 			function live_scroll() {
 				window.scrollBy( 0, LIVE_SCROLL_SPEED );
+			}
+			function startspin() {
+				$("#akahuku_throp_menu_opener").css(
+					"animation", "spin 2s infinite linear"
+				);
+			}
+			function stopspin() {
+				$("#akahuku_throp_menu_opener").css(
+					"animation", "none"
+				);
 			}
 		}
 	}
@@ -301,6 +314,14 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		function clearForm() {
 			$("#ftxa").val("");
 		}
+	}
+	function addCss() {
+		GM_addStyle(
+			"@keyframes spin {" +
+			"  0% { transform: rotate(0deg); }" +
+			"  100% { transform: rotate(359deg); }" +
+			"}"
+		);
 	}
 
 })(jQuery);
