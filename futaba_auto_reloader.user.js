@@ -168,7 +168,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 			function startspin() {
 				$("#akahuku_throp_menu_opener").css(
-					"animation", "spin 2s infinite linear"
+					"animation", "spin 2s infinite steps(8)"
 				);
 			}
 			function stopspin() {
