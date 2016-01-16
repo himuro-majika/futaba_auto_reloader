@@ -230,6 +230,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			e.initEvent("click", false, true);
 			relbutton.dispatchEvent(e);
 		}
+		setTimeout(function(){
+			getNewResContent();
+		}, 1000);
 	}
 
 	/*
@@ -266,7 +269,24 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		}
 	}
-
+	// 新着レスの内容を取得
+	function getNewResContent() {
+		var $newrestable = $("#akahuku_new_reply_header ~ table[border]");
+		if ($newrestable.length) {
+			var restexts = [];
+			$newrestable.each(function() {
+				var texts = [];
+				$(this).find("blockquote").contents().each(function() {
+					if ($(this).text() !== "") {
+						texts.push($(this).text());
+					}
+				});
+				restexts.push(texts.join("\r\n"));
+			});
+			var popupText = restexts.join("\r\n===============\r\n");
+			showNotification(popupText);
+		}
+	}
 	/*
 	 * 赤福のステータスからスレ消滅状態をチェック
 	 */
@@ -323,5 +343,18 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			"}"
 		);
 	}
-
+	// 新着レスをポップアップでデスクトップ通知する
+	function showNotification(body) {
+		Notification.requestPermission(function(permission) {
+			// console.log(permission);
+		});
+		var icon = $("#akahuku_thumbnail").attr("src");
+		var instance = new Notification(
+			document.title, {
+				body: body,
+				icon: icon,
+			}
+		);
+	}
+	
 })(jQuery);
