@@ -31,16 +31,17 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var timerNormal, timerLiveReload, timerLiveScroll;
 	var url = location.href;
 	var script_name = "futaba_auto_reloader";
+	var isWindowActive = true;	// タブのアクティブ状態
 
 	if(!isFileNotFound()){
 		setNormalReload();
 	}
-
 	soudane();
 	makeFormClearButton();
 	reset_title();
 	make_live_button();
 	addCss();
+	setWindowFocusEvent();
 
 	//通常リロード開始
 	function setNormalReload() {
@@ -231,7 +232,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			relbutton.dispatchEvent(e);
 		}
 		setTimeout(function(){
-			getNewResContent();
+			if (!isWindowActive) {
+				getNewResContent();
+			}
 		}, 1000);
 	}
 
@@ -342,6 +345,17 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			"  100% { transform: rotate(359deg); }" +
 			"}"
 		);
+	}
+	// タブのアクティブ状態を取得
+	function setWindowFocusEvent() {
+		$(window).focus();
+		$(window).bind("focus", function() {
+			// タブアクティブ時
+			isWindowActive = true;
+		}).bind("blur", function() {
+			// タブ非アクティブ時
+			isWindowActive = false;
+		});
 	}
 	// 新着レスをポップアップでデスクトップ通知する
 	function showNotification(body) {
