@@ -26,12 +26,14 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var LIVE_SCROLL_SPEED = 2;				//実況モードスクロール幅[px]
 	var LIVE_TOGGLE_KEY = "76";				//実況モードON・OFF切り替えキーコード(With Alt)
 	var SHOW_NORMAL_BUTTON = true;			//通常モードボタンを表示する
+	var USE_NOTIFICATION_DEFAULT = false;	// 新着レスの通知をデフォルトで有効にする
 
 	var res = 0;	//新着レス数
 	var timerNormal, timerLiveReload, timerLiveScroll;
 	var url = location.href;
 	var script_name = "futaba_auto_reloader";
 	var isWindowActive = true;	// タブのアクティブ状態
+	var isNotificationEnable = USE_NOTIFICATION_DEFAULT;	// 通知の有効フラグ
 
 	if(!isFileNotFound()){
 		setNormalReload();
@@ -75,6 +77,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			id: "GM_FAR_relButton_normal",
 			class: "GM_FAR_relButton",
 			text: "[通常]",
+			title: (RELOAD_INTERVAL_NORMAL / 1000) + "秒毎のリロード",
 			css: {
 				cursor: "pointer",
 				"background-color": "#ea8",
@@ -89,7 +92,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var $liveButton = $("<a>", {
 			id: "GM_FAR_relButton_live",
 			class: "GM_FAR_relButton",
-			text: "[実況モード(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
+			text: "[実況(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
+			title: (RELOAD_INTERVAL_LIVE / 1000) + "秒毎のリロード + スクロール",
 			css: {
 				cursor: "pointer",
 			},
@@ -97,8 +101,24 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				liveMode();
 			}
 		});
+		// 通知ボタン
+		var $notificationButton = $("<a>", {
+			id: "GM_FAR_notificationButton",
+			text: "[通知]",
+			title: "新着レスのポップアップ通知",
+			css: {
+				cursor: "pointer",
+			},
+			click: function() {
+				toggleNotification();
+			}
+		});
+		if (isNotificationEnable) {
+			$notificationButton.css("background-color", "#a9d8ff");
+		}
 
 		var $input = $("input[value$='信する']");
+		$input.after($notificationButton);
 		$input.after($liveButton);
 		if(SHOW_NORMAL_BUTTON){
 			$input.after($normalButton);
@@ -178,6 +198,32 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				);
 			}
 		}
+		/*
+		 * 通知切り替え
+		 */
+		function toggleNotification() {
+			if(isNotificationEnable) {
+				$notificationButton.css("background" , "none");
+				isNotificationEnable = false;
+			} else {
+				Notification.requestPermission(function(result) {
+					if (result == "denied") {
+						$notificationButton.attr("title",
+							"通知はFirefoxの設定でブロックされています\n" +
+							"ロケーションバー(URL)の左のアイコンをクリックして\n" +
+							"「サイトからの通知の表示」を「許可」に設定してください");
+						return;
+					} else if (result == "default") {
+						console.log("default");
+						return;
+					}
+					$notificationButton.attr("title", "新着レスのポップアップ通知");
+					$notificationButton.css("background-color" , "#a9d8ff");
+					isNotificationEnable = true;
+				});
+			}
+
+		 }
 	}
 
 
@@ -232,7 +278,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			relbutton.dispatchEvent(e);
 		}
 		setTimeout(function(){
-			if (!isWindowActive) {
+			if (!isWindowActive && isNotificationEnable) {
 				getNewResContent();
 			}
 		}, 1000);
@@ -359,9 +405,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	}
 	// 新着レスをポップアップでデスクトップ通知する
 	function showNotification(body) {
-		Notification.requestPermission(function(permission) {
-			// console.log(permission);
-		});
 		var icon = $("#akahuku_thumbnail").attr("src");
 		var instance = new Notification(
 			document.title, {
