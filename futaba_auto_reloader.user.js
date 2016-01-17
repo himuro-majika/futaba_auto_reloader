@@ -405,6 +405,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	}
 	// 新着レスをポップアップでデスクトップ通知する
 	function showNotification(body) {
+		Notification.requestPermission();
 		var icon = $("#akahuku_thumbnail").attr("src");
 		var instance = new Notification(
 			document.title, {
