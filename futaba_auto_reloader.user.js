@@ -320,7 +320,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	}
 	// 新着レスの内容を取得
 	function getNewResContent() {
-		var $newrestable = $("#akahuku_new_reply_header ~ table[border]");
+		var $newrestable = $("#akahuku_new_reply_header ~ table:not([id])");
 		if ($newrestable.length) {
 			var restexts = [];
 			$newrestable.each(function() {
