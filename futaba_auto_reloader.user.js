@@ -17,16 +17,17 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	/*
 	 *	設定
 	 */
-	var USE_SOUDANE = true;					//そうだねをハイライト表示する
-	var USE_CLEAR_BUTTON = true;			//フォームにクリアボタンを表示する
-	var USE_TITLE_NAME = true;				//新着レス数・スレ消滅状態をタブに表示する
+	var USE_SOUDANE = true;								//そうだねをハイライト表示する
+	var USE_CLEAR_BUTTON = true;					//フォームにクリアボタンを表示する
+	var USE_TITLE_NAME = true;						//新着レス数・スレ消滅状態をタブに表示する
 	var RELOAD_INTERVAL_NORMAL = 60000;		//リロード間隔[ミリ秒](通常時)
-	var RELOAD_INTERVAL_LIVE = 5000;		//リロード間隔[ミリ秒](実況モード時)
-	var LIVE_SCROLL_INTERVAL = 12;			//実況モードスクロール間隔[ミリ秒]
-	var LIVE_SCROLL_SPEED = 2;				//実況モードスクロール幅[px]
-	var LIVE_TOGGLE_KEY = "76";				//実況モードON・OFF切り替えキーコード(With Alt)
-	var SHOW_NORMAL_BUTTON = true;			//通常モードボタンを表示する
+	var RELOAD_INTERVAL_LIVE = 5000;			//リロード間隔[ミリ秒](実況モード時)
+	var LIVE_SCROLL_INTERVAL = 12;				//実況モードスクロール間隔[ミリ秒]
+	var LIVE_SCROLL_SPEED = 2;						//実況モードスクロール幅[px]
+	var LIVE_TOGGLE_KEY = "76";						//実況モードON・OFF切り替えキーコード(With Alt)
+	var SHOW_NORMAL_BUTTON = true;				//通常モードボタンを表示する
 	var USE_NOTIFICATION_DEFAULT = false;	// 新着レスの通知をデフォルトで有効にする
+	var USE_SAVE_MHT = false;							// スレ消滅時にMHTで保存する
 
 	var res = 0;	//新着レス数
 	var timerNormal, timerLiveReload, timerLiveScroll;
@@ -260,6 +261,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		if(isAkahukuNotFound()){
 			//404時
 			clearNormalReload();
+			if (USE_SAVE_MHT) {
+				saveMHT();
+			}
 			console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 		}
 		else {
@@ -271,7 +275,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 * 赤福の続きを読むボタンをクリック
 	 */
 	function clickrelbutton() {
-		var relbutton = document.getElementById("akahuku_reload_button");
+		var relbutton = $("#akahuku_reload_button").get(0);
 		if(relbutton){
 			var e = document.createEvent("MouseEvents");
 			e.initEvent("click", false, true);
@@ -283,7 +287,17 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		}, 1000);
 	}
-
+	/**
+	 * MHTで保存
+	 */
+	function saveMHT() {
+		var saveMHTButton = $("#akahuku_throp_savemht_button").get(0);
+		if (saveMHTButton) {
+			var e = document.createEvent("MouseEvents");
+			e.initEvent("click", false, true);
+			saveMHTButton.dispatchEvent(e);
+		}
+	}
 	/*
 	 * そうだねの数に応じてレスを着色
 	 */
