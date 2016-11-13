@@ -4,6 +4,7 @@
 // @description    赤福Firefox版で自動更新しちゃう(実況モードもあるよ！)
 // @author         himuro_majika
 // @include        http://*.2chan.net/*/res/*
+// @include        https://*.2chan.net/*/res/*
 // @include        http://board.futakuro.com/*/res/*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
 // @version        1.7
