@@ -235,7 +235,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	function reset_title() {
 		//ページ末尾でホイールダウンした時
 		window.addEventListener("DOMMouseScroll",function scroll(event) {
-			var window_y = window.scrollY;
+			var window_y = Math.ceil(window.scrollY);
 			var window_ymax = window.scrollMaxY;
 			if (event.detail > 0 && window_y >= window_ymax) {
 				reset_titlename();
