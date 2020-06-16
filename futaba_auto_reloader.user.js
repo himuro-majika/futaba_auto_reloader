@@ -31,11 +31,13 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var USE_SAVE_MHT = false;							// スレ消滅時にMHTで保存する
 
 	var res = 0;	//新着レス数
-	var timerNormal, timerLiveReload, timerLiveScroll;
+	var timerNormal, timerLiveReload, timerLiveScroll, timerSoudane;
 	var url = location.href;
 	var script_name = "futaba_auto_reloader";
 	var isWindowActive = true;	// タブのアクティブ状態
 	var isNotificationEnable = USE_NOTIFICATION_DEFAULT;	// 通知の有効フラグ
+	var normal_flag = true;	//通常モード有効フラグ
+	var live_flag = false;	//実況モード有効フラグ
 
 	if(!isFileNotFound()){
 		setNormalReload();
@@ -46,6 +48,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	make_live_button();
 	addCss();
 	setWindowFocusEvent();
+	observeInserted();
 
 	//通常リロード開始
 	function setNormalReload() {
@@ -73,7 +76,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 * ボタン作成
 	 */
 	function make_live_button() {
-		var normal_flag = true;	//通常モード有効フラグ
 		//通常モードボタン
 		var $normalButton = $("<a>", {
 			id: "GM_FAR_relButton_normal",
@@ -85,11 +87,10 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				"background-color": "#ea8",
 			},
 			click: function() {
-				normalMode();
+				toggleNormalMode();
 			}
 		});
 
-		var live_flag = false;	//実況モード有効フラグ
 		//実況モードボタン
 		var $liveButton = $("<a>", {
 			id: "GM_FAR_relButton_live",
@@ -136,7 +137,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		/*
 		 * 通常モード切り替え
 		 */
-		function normalMode() {
+		function toggleNormalMode() {
 			if(normal_flag) {
 				clearNormalReload();
 				$normalButton.css("background" , "none");
@@ -146,60 +147,8 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				$normalButton.css("background-color" , "#ea8");
 				normal_flag = true;
 			}
-
-		 }
-
-		/*
-		 * 実況モード
-		 * 呼出ごとにON/OFFトグル
-		 */
-		function liveMode() {
-			if (!live_flag) {
-				//実況モード時リロード
-				timerLiveReload = setInterval(rel_scroll, RELOAD_INTERVAL_LIVE);
-				//自動スクロール
-				timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
-				$liveButton.css("backgroundColor", "#ffa5f0");
-				startspin();
-				console.log(script_name + ": Start live mode @" + url);
-				live_flag = true;
-			} else {
-				clearInterval(timerLiveReload);
-				clearInterval(timerLiveScroll);
-				$liveButton.css("background", "none");
-				stopspin();
-				console.log(script_name + ": Stop live mode @" + url);
-				live_flag = false;
-			}
-
-			//新着スクロール
-			function rel_scroll() {
-				$('html, body').animate(
-					{scrollTop:window.scrollMaxY},"fast"
-				);
-				if(isAkahukuNotFound()){
-					//404時
-					liveMode();
-				}
-				else {
-					clickrelbutton();
-				}
-			}
-
-			function live_scroll() {
-				window.scrollBy( 0, LIVE_SCROLL_SPEED );
-			}
-			function startspin() {
-				$("#akahuku_throp_menu_opener").css(
-					"animation", "spin 2s infinite steps(8)"
-				);
-			}
-			function stopspin() {
-				$("#akahuku_throp_menu_opener").css(
-					"animation", "none"
-				);
-			}
 		}
+
 		/*
 		 * 通知切り替え
 		 */
@@ -224,10 +173,55 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					isNotificationEnable = true;
 				});
 			}
-
-		 }
+		}
 	}
 
+	/*
+	 * 実況モード
+	 * 呼出ごとにON/OFFトグル
+	 */
+	function liveMode() {
+		var live_button = $("#GM_FAR_relButton_live");
+		if (!live_flag) {
+			//実況モード時リロード
+			timerLiveReload = setInterval(rel_scroll, RELOAD_INTERVAL_LIVE);
+			//自動スクロール
+			timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
+			live_button.css("backgroundColor", "#ffa5f0");
+			startspin();
+			console.log(script_name + ": Start live mode @" + url);
+			live_flag = true;
+		} else {
+			clearInterval(timerLiveReload);
+			clearInterval(timerLiveScroll);
+			live_button.css("background", "none");
+			stopspin();
+			console.log(script_name + ": Stop live mode @" + url);
+			live_flag = false;
+		}
+
+		//リロード+新着スクロール
+		function rel_scroll() {
+			$('html, body').animate(
+				{scrollTop:window.scrollMaxY},"fast"
+			);
+			rel();
+		}
+
+		function live_scroll() {
+			window.scrollBy( 0, LIVE_SCROLL_SPEED );
+		}
+		function startspin() {
+			$("#akahuku_throp_menu_opener").css(
+				"animation", "spin 2s infinite steps(8)"
+			);
+		}
+		function stopspin() {
+			$("#akahuku_throp_menu_opener").css(
+				"animation", "none"
+			);
+		}
+	}
 
 	/*
 	 * 新着レスをリセット
@@ -256,26 +250,13 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		}
 	}
 
-	function rel() {
-		soudane();
-		setTimeout(changetitle, 1000);
-		if(isAkahukuNotFound()){
-			//404時
-			clearNormalReload();
-			if (USE_SAVE_MHT) {
-				saveMHT();
-			}
-			console.log(script_name + ": Page not found, Stop auto reloading @" + url);
-		}
-		else {
-			clickrelbutton();
-		}
-	}
-	
 	/**
 	 * 赤福の続きを読むボタンをクリック
 	 */
-	function clickrelbutton() {
+	function rel() {
+		if(isAkahukuNotFound()) {
+			return;
+		}
 		var relbutton = $("#akahuku_reload_button").get(0);
 		if(relbutton){
 			var e = document.createEvent("MouseEvents");
@@ -283,8 +264,23 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			relbutton.dispatchEvent(e);
 		}
 		setTimeout(function(){
+			soudane();
+
 			if (!isWindowActive && isNotificationEnable) {
 				getNewResContent();
+			}
+			if(isAkahukuNotFound()) {
+				//404時
+				if (live_flag) {
+					liveMode();
+				}
+
+				changetitle();
+				clearNormalReload();
+				if (USE_SAVE_MHT) {
+					saveMHT();
+				}
+				console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 			}
 		}, 1000);
 	}
@@ -303,7 +299,15 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 * そうだねの数に応じてレスを着色
 	 */
 	function soudane() {
-		if ( USE_SOUDANE ) {
+		if ( !USE_SOUDANE ) return;
+
+		clearTimeout(timerSoudane);
+		timerSoudane = setTimeout(function() {
+			var coloredNode = $(".rtd[style]");
+			coloredNode.each(function() {
+				$(this).removeAttr("style");
+			});
+
 			$("td > .sod").each(function(){
 				var sodnum = $(this).text().match(/\d+/);
 				if (sodnum){
@@ -311,6 +315,29 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					$(this).parent().css("background-color", col);
 				}
 			});
+		}, 100);
+	}
+	
+	// 続きを読むで挿入される要素を監視
+	function observeInserted() {
+		var target = $(".thre").length ?
+			$(".thre").get(0) :
+			$("html > body > form[action]:not([enctype])").get(0);
+		var observer = new MutationObserver(function(mutations) {
+			soudane();
+
+			mutations.forEach(function(mutation) {
+				var $nodes = $(mutation.addedNodes);
+				replaceNodeInserted($nodes);
+			});
+		});
+		observer.observe(target, { childList: true });
+	}
+	// 挿入されたレス
+	function replaceNodeInserted($nodes) {
+		var insertedRes = $nodes.find(".rtd");
+		if( insertedRes.length ) {
+			changetitle();
 		}
 	}
 
@@ -318,19 +345,14 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 * タブタイトルに新着レス数・スレ消滅状態を表示
 	 */
 	function changetitle() {
-		if ( USE_TITLE_NAME ) {
-			var title_char = title_name();
-			var newres = $("#akahuku_new_reply_header_number").text();
-			if (isAkahukuNotFound()) {
-				document.title = "#" + title_char;
-			} else {
-				if(newres) {
-					res += parseInt(newres);
-				}
-				if ( res !== 0) {
-					document.title = "(" + res + ")" + title_char;
-				}
-			}
+		if ( !USE_TITLE_NAME ) return;
+
+		var title_char = title_name();
+		if (isAkahukuNotFound()) {
+			document.title = "#" + document.title;
+		} else {
+			res++;
+			document.title = "(" + res + ")" + title_char;
 		}
 	}
 	// 新着レスの内容を取得
@@ -429,5 +451,5 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		);
 	}
-	
+
 })(jQuery);
