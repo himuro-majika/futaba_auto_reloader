@@ -9,6 +9,7 @@
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
 // @version        1.7.1
 // @grant          GM_addStyle
+// @grant          GM_xmlhttpRequest
 // @license        MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -49,6 +50,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	addCss();
 	setWindowFocusEvent();
 	observeInserted();
+	showFindNextThread();
 
 	//通常リロード開始
 	function setNormalReload() {
@@ -275,11 +277,13 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					liveMode();
 				}
 
-				changetitle();
+				changeTitleWhenExpired();
 				clearNormalReload();
 				if (USE_SAVE_MHT) {
 					saveMHT();
 				}
+				findNextThread();
+
 				console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 			}
 		}, 1000);
@@ -346,15 +350,19 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 */
 	function changetitle() {
 		if ( !USE_TITLE_NAME ) return;
-
 		var title_char = title_name();
-		if (isAkahukuNotFound()) {
+		if (isAkahukuNotFound()) return;
+		res++;
+		document.title = "(" + res + ")" + title_char;
+	}
+
+	function changeTitleWhenExpired() {
+		if (!isAkahukuNotFound()) return;
+		if(document.title.substr(0,1) !== "#"){
 			document.title = "#" + document.title;
-		} else {
-			res++;
-			document.title = "(" + res + ")" + title_char;
 		}
 	}
+
 	// 新着レスの内容を取得
 	function getNewResContent() {
 		var $newrestable = $("#akahuku_new_reply_header ~ table:not([id])");
@@ -431,7 +439,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	}
 	// タブのアクティブ状態を取得
 	function setWindowFocusEvent() {
-		$(window).focus();
 		$(window).bind("focus", function() {
 			// タブアクティブ時
 			isWindowActive = true;
@@ -452,4 +459,104 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		);
 	}
 
+	/**
+	 * 次スレ候補検索ボタン表示
+	 */
+	function showFindNextThread() {
+		$("body").append(
+			$("<div>", {
+				id: "GM_FAR_next_thread_area",
+				class: "GM_FAR"
+			}).append(
+				$("<div>").append(
+					$("<a>", {
+						id: "GM_FAR_find_next_thread",
+						class: "GM_FAR_Button",
+						text: "[次スレ候補検索]",
+						css: {
+							cursor: "pointer",
+							"font-size": "9pt"
+						},
+						click: function() {
+							findNextThread();
+						}
+					}),
+					$("<span>", {
+						id: "GM_FAR_next_thread_search_result",
+						css: {
+							"display": "none",
+							"font-size": "9pt"
+						}
+					}).append(
+						$("<span>", {
+							text: "検索結果:",
+						}),
+						$("<span>", {
+							id: "GM_FAR_next_thread_search_result_count",
+							text: "0"
+						})
+					)
+				),
+				$("<ul>", {
+					"id": "GM_FAR_next_thread_found"
+				}).append(
+					$("<span>", {
+						id: "GM_FAR_next_thread_search_status",
+						text: "次スレ候補検索中...",
+						css: {
+							"display": "none"
+						}
+					})
+				)
+			)
+		)
+	}
+
+	/**
+	 * 次スレ候補検索
+	 */
+	function findNextThread() {
+		var foundList = $("#GM_FAR_next_thread_found");
+		foundList.empty()
+		var statusMessage = $("#GM_FAR_next_thread_search_status")
+		statusMessage.show();
+		var dir = location.href.substr(0, location.href.lastIndexOf('/') - 3);
+		var threadTitle = $("#akahuku_thread_text").text().substr(0, 4);
+		var catalogURL = dir + "futaba.php?mode=cat&sort=1"
+		var resultCount = 0;
+		GM_xmlhttpRequest({
+			method: "GET",
+			url: catalogURL,
+			onload: function(res) {
+				statusMessage.hide();
+				var catalog = $($.parseHTML(res.response));
+				var cattable = catalog.filter("#cattable");
+				var td = cattable.find("td small");
+				td.each(function() {
+					var tdText = $(this).text()
+					if( tdText.substr(0, 4) == threadTitle) {
+						resultCount++;
+						var foundThread = $(this).parent().find("a");
+						var foundThreadResCount = $(this).parent().find("font").text();
+						var href = foundThread.attr("href");
+						foundThread.attr("href", dir + href);
+						foundList.append(
+							$("<li>").append(
+								$(this),
+								$("<span>", {
+									text: foundThreadResCount + "レス",
+									css: {
+										"margin-left": "2em"
+									}
+								}),
+								foundThread
+							)
+						);
+					}
+				});
+				$("#GM_FAR_next_thread_search_result_count").text(resultCount);
+				$("#GM_FAR_next_thread_search_result").show();
+			}
+		});
+	}
 })(jQuery);
