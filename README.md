@@ -1,6 +1,6 @@
 ## なにコレ
 ブラウザ上で動くUserscriptです  
-[Greasemonkey](https://addons.mozilla.org/ja/firefox/addon/greasemonkey/)アドオンをインストールしてからこのスクリプトをインストールしてください  
+Firefoxの場合、[Tampermonkey](https://addons.mozilla.org/ja/firefox/addon/tampermonkey/)を先にインスールしてからスクリプトをインストールして下さい  
 
 ふたば☆ちゃんねるのスレを開いている間新着レスを自動で取得し続けます  
 ※このUserscriptは[赤福Firefox SP](http://toshiakisp.github.io/akahuku-firefox-sp/)の機能を使用しているためFirefox専用となります  
@@ -17,7 +17,7 @@
 * 各機能のカスタマイズはソースを参照
 * (v1.7)新着レスをポップアップで通知  
   スレを表示していない時に新着レスがあるとポップアップで表示されます
-
+* (v1.8)次スレ候補検索
 
 ## 注意事項
 ※このUserscriptはFirefoxで[赤福Firefox SP](http://toshiakisp.github.io/akahuku-firefox-sp/)をインストールしている事が前提となります
@@ -41,6 +41,11 @@
 
 ## 更新履歴
 
+* v1.8.0 2020-06-21
+  - スレ本文から次スレ候補を検索する機能を追加
+    スレ末尾のボタンクリックで手動検索またはスレ消滅判定時に自動検索します
+  - そうだねハイライト、新着レス数/消滅表示の不具合を修正
+  - その他軽微な修正
 * v1.7.1 2016-11-13
   - https対応
   - スレ消滅時にMHT保存(要スレ操作パネル)する隠しオプション追加
