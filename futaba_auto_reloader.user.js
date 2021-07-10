@@ -521,7 +521,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		var statusMessage = $("#GM_FAR_next_thread_search_status")
 		statusMessage.show();
 		var dir = location.href.substr(0, location.href.lastIndexOf('/') - 3);
-		var threadTitle = $("#akahuku_thread_text").text().substr(0, 4);
+		var threadTitle = $("#akahuku_thread_text").text();
 		var catalogURL = dir + "futaba.php?mode=cat&sort=1"
 		var resultCount = 0;
 		GM_xmlhttpRequest({
@@ -534,25 +534,24 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 				var td = cattable.find("td small");
 				td.each(function() {
 					var tdText = $(this).text()
-					if( tdText.substr(0, 4) == threadTitle) {
-						resultCount++;
-						var foundThread = $(this).parent().find("a");
-						var foundThreadResCount = $(this).parent().find("font").text();
-						var href = foundThread.attr("href");
-						foundThread.attr("href", dir + href);
-						foundList.append(
-							$("<li>").append(
-								$(this),
-								$("<span>", {
-									text: foundThreadResCount + "レス",
-									css: {
-										"margin-left": "2em"
-									}
-								}),
-								foundThread
-							)
-						);
-					}
+					if (tdText.substr(0, 3) != threadTitle.substr(0, 3) || tdText.substr(0, 3) == "ｷﾀ━") return;
+					resultCount++;
+					var foundThread = $(this).parent().find("a");
+					var foundThreadResCount = $(this).parent().find("font").text();
+					var href = foundThread.attr("href");
+					foundThread.attr("href", dir + href);
+					foundList.append(
+						$("<li>").append(
+							$(this),
+							$("<span>", {
+								text: foundThreadResCount + "レス",
+								css: {
+									"margin-left": "2em"
+								}
+							}),
+							foundThread
+						)
+					);
 				});
 				$("#GM_FAR_next_thread_search_result_count").text(resultCount);
 				$("#GM_FAR_next_thread_search_result").show();
