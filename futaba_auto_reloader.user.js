@@ -271,8 +271,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			if (!isWindowActive && isNotificationEnable) {
 				getNewResContent();
 			}
-			if(isAkahukuNotFound()) {
-				//404時
+			var res = $(".rsc");
+			if(isAkahukuNotFound() || res.length >= 1000) {
+				//404 or 1000レス時
 				if (live_flag) {
 					liveMode();
 				}
