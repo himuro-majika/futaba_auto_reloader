@@ -39,6 +39,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var isNotificationEnable = USE_NOTIFICATION_DEFAULT;	// 通知の有効フラグ
 	var normal_flag = true;	//通常モード有効フラグ
 	var live_flag = false;	//実況モード有効フラグ
+	var isThreadDown = false;
 
 	if(!isFileNotFound()){
 		setNormalReload();
@@ -51,6 +52,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	setWindowFocusEvent();
 	observeInserted();
 	showFindNextThread();
+	setWheelEvent();
 
 	//通常リロード開始
 	function setNormalReload() {
@@ -284,7 +286,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					saveMHT();
 				}
 				findNextThread();
-
+				isThreadDown = true;
 				console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 			}
 		}, 1000);
@@ -559,4 +561,35 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		});
 	}
+
+	function setWheelEvent() {
+		var wheelNum = 3;	// ホイールダウン回数
+		var timerWheel;
+		var n = 0;
+		window.addEventListener("wheel", (e) => {
+			// スレ落ち後の手動次スレ検索
+			if(isThreadDown) {
+				var y = window.pageYOffset;
+				var ym = getPageBottom();
+				console.log(y);
+				console.log(ym);
+				if (e.deltaY > 0 && y >= ym) {
+					n++;
+					if (n >= wheelNum) {
+						clearTimeout(timerWheel);
+						n = 0;
+						timerWheel = setTimeout(() => {
+							findNextThread();
+						}, 200);
+					}
+				}
+			}
+		} ,false);
+		/* ページ末尾 */
+		function getPageBottom() {
+			var pageBottom = document.body.scrollHeight - window.innerHeight;
+			return pageBottom;
+		}
+	}
+
 })(jQuery);
