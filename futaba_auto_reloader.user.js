@@ -10,6 +10,8 @@
 // @version        1.8.0
 // @grant          GM_addStyle
 // @grant          GM_xmlhttpRequest
+// @grant          GM_getValue
+// @grant          GM_setValue
 // @license        MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAAPUExURYv4i2PQYy2aLUe0R////zorx9oAAAAFdFJOU/////8A+7YOUwAAAElJREFUeNqUj1EOwDAIQoHn/c88bX+2fq0kRsAoUXVAfwzCttWsDWzw0kNVWd2tZ5K9gqmMZB8libt4pSg6YlO3RnTzyxePAAMAzqMDgTX8hYYAAAAASUVORK5CYII=
 // ==/UserScript==
@@ -19,6 +21,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	/*
 	 *	設定
 	 */
+	// =====================================================
 	var USE_SOUDANE = true;								//そうだねをハイライト表示する
 	var USE_CLEAR_BUTTON = true;					//フォームにクリアボタンを表示する
 	var USE_TITLE_NAME = true;						//新着レス数・スレ消滅状態をタブに表示する
@@ -26,34 +29,45 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	var RELOAD_INTERVAL_LIVE = 5000;			//リロード間隔[ミリ秒](実況モード時)
 	var LIVE_SCROLL_INTERVAL = 12;				//実況モードスクロール間隔[ミリ秒]
 	var LIVE_SCROLL_SPEED = 2;						//実況モードスクロール幅[px]
-	var LIVE_TOGGLE_KEY = "76";						//実況モードON・OFF切り替えキーコード(With Alt)
+	var LIVE_TOGGLE_KEY = "l";						//実況モードON・OFF切り替えキー(With Alt)
 	var SHOW_NORMAL_BUTTON = true;				//通常モードボタンを表示する
 	var USE_NOTIFICATION_DEFAULT = false;	// 新着レスの通知をデフォルトで有効にする
 	var USE_SAVE_MHT = false;							// スレ消滅時にMHTで保存する
+	// =====================================================
+
 
 	var res = 0;	//新着レス数
-	var timerNormal, timerLiveReload, timerLiveScroll, timerSoudane;
+	var timerNormal, timerLiveReload, timerLiveJump, timerLiveScroll, timerSoudane;
 	var url = location.href;
 	var script_name = "futaba_auto_reloader";
 	var isWindowActive = true;	// タブのアクティブ状態
 	var isNotificationEnable = USE_NOTIFICATION_DEFAULT;	// 通知の有効フラグ
 	var normal_flag = true;	//通常モード有効フラグ
 	var live_flag = false;	//実況モード有効フラグ
-	var isThreadDown = false;
+	var isSoudane = true;
 
-	if(!isFileNotFound()){
+	init();
+
+	function init() {
+		if(isFileNotFound()) return;
+		
+		loadSettings();
 		setNormalReload();
+		soudane();
+		makeButton();
+		addCss();
+		setWindowFocusEvent();
+		observeInserted();
+		showFindNextThread();
+		setWheelEvent();
+		setKeyEvent();
 	}
-	soudane();
-	makeFormClearButton();
-	reset_title();
-	make_live_button();
-	addCss();
-	setWindowFocusEvent();
-	observeInserted();
-	showFindNextThread();
-	setWheelEvent();
 
+	// 設定ロード
+	function loadSettings() {
+		isSoudane = GM_getValue("soudane", true);
+		console.log(isSoudane);
+	}
 	//通常リロード開始
 	function setNormalReload() {
 		timerNormal = setInterval(rel, RELOAD_INTERVAL_NORMAL);
@@ -79,9 +93,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	/*
 	 * ボタン作成
 	 */
-	function make_live_button() {
+	function makeButton() {
 		//通常モードボタン
-		var $normalButton = $("<a>", {
+		var normalButton = $("<a>", {
 			id: "GM_FAR_relButton_normal",
 			class: "GM_FAR_relButton",
 			text: "[通常]",
@@ -96,10 +110,10 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		});
 
 		//実況モードボタン
-		var $liveButton = $("<a>", {
+		var liveButton = $("<a>", {
 			id: "GM_FAR_relButton_live",
 			class: "GM_FAR_relButton",
-			text: "[実況(Alt+" + String.fromCharCode(LIVE_TOGGLE_KEY) + ")]",
+			text: "[実況(Alt+" + LIVE_TOGGLE_KEY.toUpperCase() + ")]",
 			title: (RELOAD_INTERVAL_LIVE / 1000) + "秒毎のリロード + スクロール",
 			css: {
 				cursor: "pointer",
@@ -109,7 +123,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		});
 		// 通知ボタン
-		var $notificationButton = $("<a>", {
+		var notificationButton = $("<a>", {
 			id: "GM_FAR_notificationButton",
 			text: "[通知]",
 			title: "新着レスのポップアップ通知",
@@ -121,65 +135,62 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		});
 		if (isNotificationEnable) {
-			$notificationButton.css("background-color", "#a9d8ff");
+			notificationButton.css("background-color", "#a9d8ff");
 		}
+		// フォームクリアボタン
+		if ( USE_CLEAR_BUTTON ) {
+			var formClearButton = $("<div>", {
+				id: "formClearButton",
+				text: "[クリア]",
+				css: {
+					cursor: "pointer",
+					margin: "0 5px"
+				},
+				click: function() {
+					clearForm();
+				}
+			});
+			var comeTd = $(".ftdc b:contains('コメント')");
+			comeTd.after(formClearButton);
+		}
+		// そボタン
+		var soudaneButton = $("<a>", {
+			id: "GM_FAR_soudaneButton",
+			text: "[そ]",
+			title: "そうだねに色を付ける",
+			css: {
+				cursor: "pointer",
+			},
+			click: function() {
+				toggleSoudane();
+			}
+		});
+		if (isSoudane) soudaneButton.css("background-color" , "#ea8");
 
-		var $input = $("input[value$='信する']");
-		$input.after($notificationButton);
-		$input.after($liveButton);
+
+		var input = $("input[value$='信する']");
+		input.after(soudaneButton);
+		input.after(notificationButton);
+		input.after(liveButton);
 		if(SHOW_NORMAL_BUTTON){
-			$input.after($normalButton);
-		}
-
-		//実況モードトグルショートカットキー
-		window.addEventListener("keydown",function(e) {
-			if ( e.altKey && e.keyCode == LIVE_TOGGLE_KEY ) {
-				liveMode();
-			}
-		}, false);
-
-		/*
-		 * 通常モード切り替え
-		 */
-		function toggleNormalMode() {
-			if(normal_flag) {
-				clearNormalReload();
-				$normalButton.css("background" , "none");
-				normal_flag = false;
-			} else {
-				setNormalReload();
-				$normalButton.css("background-color" , "#ea8");
-				normal_flag = true;
-			}
-		}
-
-		/*
-		 * 通知切り替え
-		 */
-		function toggleNotification() {
-			if(isNotificationEnable) {
-				$notificationButton.css("background" , "none");
-				isNotificationEnable = false;
-			} else {
-				Notification.requestPermission(function(result) {
-					if (result == "denied") {
-						$notificationButton.attr("title",
-							"通知はFirefoxの設定でブロックされています\n" +
-							"ロケーションバー(URL)の左のアイコンをクリックして\n" +
-							"「サイトからの通知の表示」を「許可」に設定してください");
-						return;
-					} else if (result == "default") {
-						console.log("default");
-						return;
-					}
-					$notificationButton.attr("title", "新着レスのポップアップ通知");
-					$notificationButton.css("background-color" , "#a9d8ff");
-					isNotificationEnable = true;
-				});
-			}
+			input.after(normalButton);
 		}
 	}
-
+	/*
+		* 通常モード切り替え
+		*/
+	function toggleNormalMode() {
+		var normalButton = $("#GM_FAR_relButton_normal");
+		if(normal_flag) {
+			clearNormalReload();
+			normalButton.css("background" , "none");
+			normal_flag = false;
+		} else {
+			setNormalReload();
+			normalButton.css("background-color" , "#ea8");
+			normal_flag = true;
+		}
+	}
 	/*
 	 * 実況モード
 	 * 呼出ごとにON/OFFトグル
@@ -187,85 +198,84 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	function liveMode() {
 		var live_button = $("#GM_FAR_relButton_live");
 		if (!live_flag) {
-			//実況モード時リロード
-			timerLiveReload = setInterval(rel_scroll, RELOAD_INTERVAL_LIVE);
-			//自動スクロール
-			timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
-			live_button.css("backgroundColor", "#ffa5f0");
+			setLiveReload();
+			setLiveJump();
+			setLiveScroll();
 			startspin();
-			console.log(script_name + ": Start live mode @" + url);
 			live_flag = true;
+			live_button.css("backgroundColor", "#ffa5f0");
+			console.log(script_name + ": Start live mode @" + url);
 		} else {
-			clearInterval(timerLiveReload);
-			clearInterval(timerLiveScroll);
-			live_button.css("background", "none");
+			clearLiveReload();
+			clearLiveJump();
+			clearLiveScroll();
 			stopspin();
-			console.log(script_name + ": Stop live mode @" + url);
 			live_flag = false;
-		}
-
-		//リロード+新着スクロール
-		function rel_scroll() {
-			$('html, body').animate(
-				{scrollTop:window.scrollMaxY},"fast"
-			);
-			rel();
-		}
-
-		function live_scroll() {
-			window.scrollBy( 0, LIVE_SCROLL_SPEED );
-		}
-		function startspin() {
-			$("#akahuku_throp_menu_opener").css(
-				"animation", "spin 2s infinite steps(8)"
-			);
-		}
-		function stopspin() {
-			$("#akahuku_throp_menu_opener").css(
-				"animation", "none"
-			);
+			live_button.css("background", "none");
+			console.log(script_name + ": Stop live mode @" + url);
 		}
 	}
-
-	/*
+	function setLiveReload() {
+		clearInterval(timerLiveReload);
+		timerLiveReload = setInterval(rel, RELOAD_INTERVAL_LIVE);
+	}
+	function clearLiveReload() {
+		clearInterval(timerLiveReload);
+	}
+	function setLiveJump() {
+		clearInterval(timerLiveJump);
+		timerLiveJump = setInterval(liveJump, RELOAD_INTERVAL_LIVE);
+	}
+	function clearLiveJump() {
+		clearInterval(timerLiveJump);
+	}
+	function setLiveScroll() {
+		clearInterval(timerLiveScroll);
+		timerLiveScroll = setInterval(live_scroll, LIVE_SCROLL_INTERVAL);
+	}
+	function clearLiveScroll() {
+		clearInterval(timerLiveScroll);
+	}
+	//自動スクロール
+	function live_scroll() {
+		window.scrollBy( 0, LIVE_SCROLL_SPEED );
+	}
+	//新着ジャンプ
+	function liveJump() {
+		$('html, body').animate({scrollTop:document.body.scrollHeight},"fast");
+	}
+	function startspin() {
+		$("#akahuku_throp_menu_opener").css(
+			"animation", "spin 2s infinite steps(8)"
+		);
+	}
+	function stopspin() {
+		$("#akahuku_throp_menu_opener").css(
+			"animation", "none"
+		);
+	}
+	/**
 	 * 新着レスをリセット
 	 */
-	function reset_title() {
-		//ページ末尾でホイールダウンした時
-		window.addEventListener("DOMMouseScroll",function scroll(event) {
-			var window_y = Math.ceil(window.scrollY);
-			var window_ymax = window.scrollMaxY;
-			if (event.detail > 0 && window_y >= window_ymax) {
-				reset_titlename();
-			}
-			return;
-		} ,false);
-		//F5キー押された時
-		window.addEventListener("keydown",function(e) {
-			if ( e.keyCode == "116" ) {
-				reset_titlename();
-			}
-		}, false);
-
-		function reset_titlename() {
-			res = 0;
-			var title_char = title_name();
-			document.title = title_char;
-		}
+	function reset_titlename() {
+		res = 0;
+		var title_char = title_name();
+		document.title = title_char;
 	}
-
 	/**
 	 * 赤福の続きを読むボタンをクリック
 	 */
 	function rel() {
-		if(isAkahukuNotFound()) {
-			return;
-		}
-		var relbutton = $("#akahuku_reload_button").get(0);
-		if(relbutton){
+		// if(isAkahukuNotFound()) {
+		// 	return;
+		// }
+		var relbutton = $("#akahuku_reload_button").get(0) ? $("#akahuku_reload_button").get(0) : $("#contres a").get(0);
+		if (relbutton){
 			var e = document.createEvent("MouseEvents");
 			e.initEvent("click", false, true);
 			relbutton.dispatchEvent(e);
+		} else {
+			return;
 		}
 		setTimeout(function(){
 			soudane();
@@ -286,7 +296,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					saveMHT();
 				}
 				findNextThread();
-				isThreadDown = true;
 				console.log(script_name + ": Page not found, Stop auto reloading @" + url);
 			}
 		}, 1000);
@@ -306,14 +315,11 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 	 * そうだねの数に応じてレスを着色
 	 */
 	function soudane() {
-		if ( !USE_SOUDANE ) return;
+		if ( !isSoudane ) return;
 
 		clearTimeout(timerSoudane);
 		timerSoudane = setTimeout(function() {
-			var coloredNode = $(".rtd[style]");
-			coloredNode.each(function() {
-				$(this).removeAttr("style");
-			});
+			clearSoudane();
 
 			$("td > .sod").each(function(){
 				var sodnum = $(this).text().match(/\d+/);
@@ -324,7 +330,25 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			});
 		}, 100);
 	}
-	
+	function clearSoudane() {
+		var coloredNode = $(".rtd[style]");
+		coloredNode.each(function() {
+			$(this).removeAttr("style");
+		});
+	}
+	function toggleSoudane() {
+		var soudaneButton = $("#GM_FAR_soudaneButton");
+		if (isSoudane) {
+			isSoudane = false;
+			clearSoudane();
+			soudaneButton.css("background" , "none");
+		} else {
+			isSoudane = true;
+			soudane();
+			soudaneButton.css("background-color" , "#ea8");
+		}
+		GM_setValue("soudane", isSoudane);
+	}
 	// 続きを読むで挿入される要素を監視
 	function observeInserted() {
 		var target = $(".thre").length ?
@@ -411,27 +435,10 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		return act_title_name;
 	}
 
-	function makeFormClearButton() {
-		if ( USE_CLEAR_BUTTON ) {
-			var $formClearButton = $("<div>", {
-				id: "formClearButton",
-				text: "[クリア]",
-				css: {
-					cursor: "pointer",
-					margin: "0 5px"
-				},
-				click: function() {
-					clearForm();
-				}
-			});
-			var $comeTd = $(".ftdc b:contains('コメント')");
-			$comeTd.after($formClearButton);
-		}
-
-		function clearForm() {
-			$("#ftxa").val("");
-		}
+	function clearForm() {
+		$("#ftxa").val("");
 	}
+
 	function addCss() {
 		GM_addStyle(
 			"@keyframes spin {" +
@@ -439,6 +446,32 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			"  100% { transform: rotate(359deg); }" +
 			"}"
 		);
+	}
+	/**
+	 * 通知切り替え
+	 */
+	 function toggleNotification() {
+		 var notificationButton = $("#GM_FAR_notificationButton");
+		if(isNotificationEnable) {
+			notificationButton.css("background" , "none");
+			isNotificationEnable = false;
+		} else {
+			Notification.requestPermission(function(result) {
+				if (result == "denied") {
+					notificationButton.attr("title",
+						"通知はFirefoxの設定でブロックされています\n" +
+						"ロケーションバー(URL)の左のアイコンをクリックして\n" +
+						"「サイトからの通知の表示」を「許可」に設定してください");
+					return;
+				} else if (result == "default") {
+					console.log("default");
+					return;
+				}
+				notificationButton.attr("title", "新着レスのポップアップ通知");
+				notificationButton.css("background-color" , "#a9d8ff");
+				isNotificationEnable = true;
+			});
+		}
 	}
 	// タブのアクティブ状態を取得
 	function setWindowFocusEvent() {
@@ -461,7 +494,6 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 			}
 		);
 	}
-
 	/**
 	 * 次スレ候補検索ボタン表示
 	 */
@@ -562,17 +594,23 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 		});
 	}
 
+	/**
+	 * マウスホイールイベント
+	 */
 	function setWheelEvent() {
 		var wheelNum = 3;	// ホイールダウン回数
 		var timerWheel;
 		var n = 0;
 		window.addEventListener("wheel", (e) => {
+			var y = window.pageYOffset;
+			var ym = getPageBottom();
+			//新着レス数をリセット
+			if (e.deltaY > 0 && y >= ym) {
+				reset_titlename();
+			}
 			// スレ落ち後の手動次スレ検索
-			if(isThreadDown) {
-				var y = window.pageYOffset;
-				var ym = getPageBottom();
-				console.log(y);
-				console.log(ym);
+			var res = $(".rsc");
+			if(isAkahukuNotFound() || res.length >= 1000) {
 				if (e.deltaY > 0 && y >= ym) {
 					n++;
 					if (n >= wheelNum) {
@@ -584,12 +622,33 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 					}
 				}
 			}
+			// 実況モード時上スクロールで自動スクロールの一時停止
+			if (live_flag && e.deltaY < 0) {
+				clearLiveScroll();
+				clearLiveJump();
+				$("#GM_FAR_relButton_live").css("backgroundColor", "#c0ffa5");
+			} else if (live_flag && y >= ym) {
+				setLiveScroll();
+				setLiveJump();
+				$("#GM_FAR_relButton_live").css("backgroundColor", "#ffa5f0");
+			}
 		} ,false);
 		/* ページ末尾 */
 		function getPageBottom() {
 			var pageBottom = document.body.scrollHeight - window.innerHeight;
 			return pageBottom;
 		}
+	}
+	/**
+	 * キーボードイベント
+	 */
+	function setKeyEvent() {
+		//実況モードトグルショートカットキー
+		window.addEventListener("keydown",function(e) {
+			if ( e.altKey && e.key == LIVE_TOGGLE_KEY ) {
+				liveMode();
+			}
+		}, false);
 	}
 
 })(jQuery);
