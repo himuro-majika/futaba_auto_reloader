@@ -7,7 +7,7 @@
 // @include        https://*.2chan.net/*/res/*
 // @include        http://board.futakuro.com/*/res/*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js
-// @version        1.8.0
+// @version        1.9.0
 // @grant          GM_addStyle
 // @grant          GM_xmlhttpRequest
 // @grant          GM_getValue
